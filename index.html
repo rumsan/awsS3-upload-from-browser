@@ -1,0 +1,56 @@
+<html>
+  <head>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css"
+    />
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+  </head>
+  <body>
+    <h2>AWS S3 File Uploader</h2>
+    <script>
+      const getPolicyAndUpload = async f => {
+        let file = $("#fileselector").get(0).files[0];
+        if (!file) {
+          alert("Please select a file.");
+          return;
+        }
+        $.post("/getpolicy", { filename: file.name, contentType: file.type }, function(data) {
+          uploadToS3(data);
+        });
+      };
+
+      const uploadToS3 = d => {
+        let file = $("#fileselector").get(0).files[0];
+        var formData = new FormData();
+        Object.keys(d.params).forEach(key => formData.append(key, d.params[key]));
+        formData.append("file", file, file.name);
+
+        $.ajax(d.endpoint_url, {
+          method: "POST",
+          data: formData,
+          processData: false,
+          contentType: false,
+          success: (a, c, data) => {
+            let location = $(data.responseXML)
+              .find("Location")
+              .text();
+            sendLocationUrlToMyServer(location);
+          }
+        });
+      };
+
+      const sendLocationUrlToMyServer = location => {
+        $.post("/savelocation", { location }, function(data) {
+          $("#location").html(data);
+        });
+      };
+    </script>
+    <form>
+      Choose a file to upload: <br />
+      <input type="file" id="fileselector" /><br /><br />
+      <input type="button" value="Upload to S3" onclick="getPolicyAndUpload();" /><br /><br />
+      <div id="location"></div>
+    </form>
+  </body>
+</html>
